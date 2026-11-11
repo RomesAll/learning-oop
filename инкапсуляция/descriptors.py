@@ -27,8 +27,42 @@ class PositiveNumber:
         setattr(inst, self.name, value)
 
 
+class NumberValidator:
+
+    def __init__(self, min_value=None, max_value=None):
+        self.min_value = min_value
+        self.max_value = max_value
+
+    def __set_name__(self, owner, name):
+        # Автоматически получаем имя атрибута (например, 'price' -> '_price')
+        self.name = "_" + name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return getattr(instance, self.name, None)
+
+    def __set__(self, instance, value):
+        if not isinstance(value, (int, float)):
+            raise TypeError(f"Атрибут '{self.name[1:]}' должен быть числом!")
+
+        # Проверяем минимальный порог, если он задан
+        if self.min_value is not None and value < self.min_value:
+            raise ValueError(
+                f"Значение '{self.name[1:]}' ({value}) не может быть меньше {self.min_value}!"
+            )
+
+        # Проверяем максимальный порог, если он задан
+        if self.max_value is not None and value > self.max_value:
+            raise ValueError(
+                f"Значение '{self.name[1:]}' ({value}) не может быть больше {self.max_value}!"
+            )
+
+        setattr(instance, self.name, value)
+
+
 class Product:
-    price = PositiveNumber()
+    price = NumberValidator(min_value=0.01)
     stock = PositiveNumber()
 
     def __init__(self, name: str, price: float, stock: int):
@@ -46,4 +80,9 @@ if __name__ == '__main__':
         item.stock = -5
     except ValueError as e:
         print(f"Ошибка перехвачена: {e}")
+
+    try:
+        item.price = 0
+    except ValueError as e:
+        print(f"Ошибка цены: {e}")
 
